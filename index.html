@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control de Devoluciones</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f4f1; --surface:#fcfcfb; --surface-2:#f0efec; --border:#e2e1dc;
+  --text:#0b0b0b; --text-2:#52514e; --text-3:#7c7b76;
+  --s-dev:#2a78d6; --s-pen:#eb6834; --accent:#2a78d6;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --good-bg:#e3f4e3; --warn-bg:#fdf1d6; --crit-bg:#fae3e3;
+  --shadow:0 1px 2px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+    --text:#ffffff; --text-2:#c3c2b7; --text-3:#8f8e86;
+    --s-dev:#3987e5; --s-pen:#d95926; --accent:#3987e5;
+    --good-bg:#16301a; --warn-bg:#3a2f12; --crit-bg:#3a1a1a;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+  --text:#ffffff; --text-2:#c3c2b7; --text-3:#8f8e86;
+  --s-dev:#3987e5; --s-pen:#d95926; --accent:#3987e5;
+  --good-bg:#16301a; --warn-bg:#3a2f12; --crit-bg:#3a1a1a;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{font-size:22px;margin:0 0 2px;font-weight:650;letter-spacing:-.01em}
+.sub{color:var(--text-2);font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+button:hover,.btn:hover{border-color:var(--text-3)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em}
+select,input[type=search]{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);min-width:150px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .l{font-size:12px;color:var(--text-2)}
+.kpi .v{font-size:28px;font-weight:650;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .n{font-size:12px;color:var(--text-3);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.card h2{font-size:15px;margin:0 0 2px;font-weight:620}
+.card .hint{font-size:12px;color:var(--text-2);margin-bottom:12px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-2);margin-bottom:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.brow{display:grid;grid-template-columns:150px 1fr 92px;gap:10px;align-items:center;font-size:13px;cursor:default}
+.brow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.brow .val{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums;font-size:12px}
+.track{display:flex;gap:2px;height:16px}
+.seg{height:100%;min-width:2px}
+.seg:first-child{border-radius:4px 0 0 4px}
+.seg:last-child{border-radius:0 4px 4px 0}
+.seg:only-child{border-radius:4px}
+.brow.clickable{cursor:pointer}
+.brow.clickable:hover .nm{text-decoration:underline}
+.brow.active .nm{font-weight:650}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2);font-weight:600;position:sticky;top:0;background:var(--surface);cursor:pointer;user-select:none;white-space:nowrap}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:var(--surface-2)}
+.tbl-wrap{overflow:auto;max-height:620px;border-radius:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap;color:var(--text)}
+.badge::before{content:"";width:7px;height:7px;border-radius:50%}
+.b-ok{background:var(--good-bg)}.b-ok::before{background:var(--good)}
+.b-par{background:var(--warn-bg)}.b-par::before{background:var(--warn)}
+.b-pen{background:var(--crit-bg)}.b-pen::before{background:var(--crit)}
+.pend{color:var(--text)}
+.muted{color:var(--text-3)}
+.small{font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:9px}
+.tabs button{border:0;background:transparent;padding:5px 10px}
+.tabs button.on{background:var(--surface);box-shadow:var(--shadow);font-weight:600}
+#tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;z-index:10;max-width:260px}
+#tip b{font-weight:620}
+.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(28px,1fr));gap:2px;align-items:end;height:140px}
+.col{background:var(--s-pen);border-radius:4px 4px 0 0;min-height:2px}
+.colx{display:grid;grid-template-columns:repeat(auto-fill,minmax(28px,1fr));gap:2px;font-size:10px;color:var(--text-3);text-align:center;margin-top:4px}
+footer{margin-top:18px;font-size:12px;color:var(--text-3)}
+footer summary{cursor:pointer;color:var(--text-2)}
+.drop{outline:2px dashed var(--accent);outline-offset:-6px}
+@media (max-width:600px){.brow{grid-template-columns:100px 1fr 70px}.kpi .v{font-size:24px}select,input[type=search]{min-width:0;width:100%}.filters label{flex:1 1 140px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+<header>
+  <div>
+    <h1>Control de devoluciones de prendas</h1>
+    <div class="sub" id="meta">—</div>
+  </div>
+  <div class="actions">
+    <label class="btn" title="Descarga el Google Sheet como .xlsx (Archivo › Descargar › Microsoft Excel) y cárgalo aquí">
+      Cargar Excel actualizado<input type="file" id="file" accept=".xlsx" hidden>
+    </label>
+    <button class="primary" id="exp">Exportar pendientes (.xlsx)</button>
+  </div>
+</header>
+
+<div class="filters">
+  <label>Supervisor/a<select id="fSup"></select></label>
+  <label>Marca<select id="fMarca"></select></label>
+  <label>Semana de entrega<select id="fSem"></select></label>
+  <label>Estado<select id="fEst">
+    <option value="">Todos</option>
+    <option value="pend">Con pendientes</option>
+    <option value="Sin devolución">Sin devolución</option>
+    <option value="Parcial">Parcial</option>
+    <option value="Completo">Completo</option>
+  </select></label>
+  <label style="flex:1 1 200px">Buscar colaborador/a, RUT o local<input type="search" id="fQ" placeholder="Nombre, RUT o local…"></label>
+  <button id="clr">Limpiar</button>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Devolución por supervisor/a</h2>
+    <div class="hint">Prendas entregadas según quien registró la entrega. Clic en una fila para filtrar.</div>
+    <div class="legend"><span><i style="background:var(--s-dev)"></i>Devueltas</span><span><i style="background:var(--s-pen)"></i>Pendientes</span></div>
+    <div class="bars" id="chSup"></div>
+  </div>
+  <div class="card">
+    <h2>Prendas pendientes por tipo</h2>
+    <div class="hint">Unidades aún no devueltas.</div>
+    <div class="bars" id="chCat"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <h2>Pendientes según semana de entrega</h2>
+  <div class="hint">Mientras más antigua la semana, más atrasada la devolución.</div>
+  <div class="cols" id="chSem"></div><div class="colx" id="chSemX"></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="toolbar">
+    <div><h2>Resumen por supervisor/a</h2></div>
+  </div>
+  <div class="tbl-wrap"><table id="tSup"></table></div>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <div><h2>Detalle por colaborador/a</h2><div class="hint" id="tColHint" style="margin:0"></div></div>
+    <div class="tabs" id="tabs">
+      <button data-v="col" class="on">Colaboradores</button>
+      <button data-v="sin">Devoluciones sin entrega registrada</button>
+    </div>
+  </div>
+  <div class="tbl-wrap"><table id="tCol"></table></div>
+</div>
+
+<footer>
+  <details>
+    <summary>¿Cómo se hace el cruce?</summary>
+    <p>Se cruzan las pestañas <b>Registro de ingresos</b> (entregas) y <b>Registro de devoluciones</b> por RUT y tipo de prenda. Cada prenda entregada se marca como devuelta cuando existe una devolución del mismo tipo de prenda para ese RUT con fecha igual o posterior a la entrega (se prefiere la misma marca). Una devolución que diga "todo" o "kit completo" cierra todas las prendas abiertas del colaborador.</p>
+    <p>Los nombres de supervisores, marcas y prendas se normalizan (ej. "HELIA", "Helia Meneses" y "HELIA MENEZES" = Helia Meneses; "huasa completa" y "traje de huasa" = Traje de huasa). Los insumos consumibles (cupones, testers, muestras, insumos de degustación, flyers, galletas, sérum) no se controlan como prendas.</p>
+    <p>Para actualizar: en Google Sheets, <i>Archivo › Descargar › Microsoft Excel (.xlsx)</i> y usar "Cargar Excel actualizado".</p>
+  </details>
+</footer>
+</div>
+<div id="tip"></div>
+
+<script>
+const EMBED = /*__DATA__*/null;
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const norm = s => (s == null ? '' : String(s)).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const title = s => String(s || '').toLowerCase().replace(/(^|[\s\-'’])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).trim();
+const fmt = n => n.toLocaleString('es-CL');
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const DAY = 864e5;
+const fdate = t => { if (t == null) return ''; const d = new Date(t); return String(d.getUTCDate()).padStart(2,'0') + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + d.getUTCFullYear(); };
+
+function parseDate(v) {
+  if (v == null || v === '') return null;
+  const s = String(v).trim();
+  if (/^\d+(\.\d+)?$/.test(s)) return Math.round((parseFloat(s) - 25569) * DAY);
+  const m = s.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap])?\.?\s*m?\.?)?/i);
+  if (!m) return null;
+  let h = +(m[4] || 0); const ap = (m[7] || '').toLowerCase();
+  if (ap === 'p' && h < 12) h += 12; if (ap === 'a' && h === 12) h = 0;
+  return Date.UTC(+m[3], +m[2] - 1, +m[1], h, +(m[5] || 0), +(m[6] || 0));
+}
+const normRut = r => String(r || '').toUpperCase().replace(/[^0-9K]/g, '').replace(/^0+/, '');
+const fmtRut = r => { if (r.length < 2) return r; const b = r.slice(0, -1), dv = r.slice(-1); return b.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + '-' + dv; };
+
+/* ---------- normalización ---------- */
+const SUP = [
+  [/hel+ia|^elia|menez|mens?es/, 'Helia Meneses'],
+  [/alex\b|alexander|pena/, 'Alexander Peña'],
+  [/isidora|alarcon/, 'Isidora Alarcón'],
+  [/constanza|consatanza|espinoza/, 'Constanza Espinoza'],
+  [/joselyn|castro/, 'Joselyn Castro'],
+  [/francisca|morales/, 'Francisca Morales'],
+  [/catalina|guzman/, 'Catalina Guzmán'],
+  [/camila|millas/, 'Camila Millas'],
+  [/alejandro|gallardo/, 'Alejandro Gallardo'],
+  [/\bmax\b|aguirre/, 'Max Aguirre'],
+  [/mirko|parra/, 'Mirko Parra'],
+];
+function canonSup(s) { const n = norm(s); if (!n) return 'Sin supervisor'; for (const [re, v] of SUP) if (re.test(n)) return v; return title(s); }
+
+const MARCA = [
+  [/little|^lc$/, 'Little Caesars'], [/beck|beky/, 'Bekys'], [/sofruco|sufruco/, 'Sofruco'],
+  [/vitamin|witamin/, 'Vitamin Water'], [/^ritz/, 'Ritz'], [/club ?social/, 'Club Social'], [/dove/, 'Dove'],
+  [/not ?co|not mayo/, 'NotCo'], [/valor/, 'Chocolate Valor'], [/royal/, 'Royal Dansk'], [/almendro/, 'El Almendro'],
+  [/del valle/, 'Andina Del Valle'], [/schwep|sshwep/, 'Schweppes'], [/montina/, 'Montina'], [/crianza/, 'La Crianza'],
+  [/hellman/, "Hellmann's"], [/sopraval/, 'Sopraval'], [/ariztia/, 'Ariztía'], [/krispy/, 'Krispy Kreme'],
+  [/super ?pollo/, 'Super Pollo'], [/super ?cerdo/, 'Super Cerdo'], [/coca|cocalcola/, 'Coca-Cola'], [/^kraft/, 'Kraft'],
+];
+function canonMarca(s) { const n = norm(s); if (!n) return 'Sin marca'; for (const [re, v] of MARCA) if (re.test(n)) return v; return title(s); }
+
+const INSUMO = /insumo|degust|desgust|cupon|t[eé]ster|muestra|galleta|serum|flyer|protein/;
+const CATS = [
+  ['Polerón', /poleron/], ['Polera', /polera/], ['Pechera', /pechera/], ['Bandeja', /bandeja/],
+  ['Jockey', /jockey|joquey/], ['Delantal', /delantal|mandil|manidl/], ['Polar', /\bpolar/], ['Chaqueta', /chaqueta/],
+  ['Pañuelo', /panuelo|panoleta|^pano$/], ['Chapita', /chapita/], ['Lanyard', /lanyard|langer/], ['Credencial', /credencial/],
+  ['Pantalón', /pantal/], ['Pendón', /pendon/], ['Parante', /parante|soporte/], ['Blazer', /blaz/], ['Vestido', /vestido/],
+  ['Calzas', /calza/], ['Juego', /juego/], ['Cinturón', /cintur/], ['Falda', /fald/], ['Blusa', /blusa/], ['Camisa', /camisa/],
+  ['Jeans', /jean/], ['Chaleco', /chaleco/], ['Shaker', /shaker/], ['Bolso', /bols/], ['Cinta', /\bcinta/], ['Gorro', /gorro/],
+];
+const HAT = /sombrer|sonbrer|sobrer|chupalla|paja/;
+const HUASA = /hua?s[aoi]|guasa|\bhusa|huesa/;
+
+// Devuelve [{cat, qty}] ; cat '*' = todo / kit completo
+function parseItems(txt) {
+  const out = [];
+  const parts = norm(txt).split(/[,;\/+\n]|\s-\s|\sy\s|\se\s/);
+  for (let p of parts) {
+    p = p.replace(/[()]/g, ' ').trim(); if (!p) continue;
+    if (/^(no|nunca)\b/.test(p)) continue;
+    p = p.replace(/\bsin\s+\w+/g, '').replace(/\bextra\b/g, '').trim();
+    let qty = 1; const q = p.match(/(^|\s)(\d{1,2})(?=\s|$)/);
+    if (q) { qty = Math.max(1, +q[2]); p = (p.slice(0, q.index) + ' ' + p.slice(q.index + q[0].length)).trim(); }
+    if (!p) continue;
+    if (INSUMO.test(p)) continue;
+    const isHat = (HAT.test(p) || (/gorro/.test(p) && HUASA.test(p))) && !/traje|uniforme|complet|vestido/.test(p);
+    if (isHat) { out.push({ cat: 'Sombrero / chupalla', qty }); continue; }
+    if (HUASA.test(p)) { out.push({ cat: 'Traje de huasa', qty }); continue; }
+    const found = CATS.filter(([, re]) => re.test(p)).map(([c]) => c);
+    if (found.length) { found.forEach(c => out.push({ cat: c, qty })); continue; }
+    if (/\btodo\b|kit completo|uniforme completo|^completo/.test(p)) { out.push({ cat: '*', qty: 1 }); continue; }
+    if (/uniforme|traje/.test(p)) { out.push({ cat: 'Uniforme', qty }); continue; }
+    if (p === 'otro' || p.length < 3) continue;
+    out.push({ cat: title(p), qty });
+  }
+  return out;
+}
+
+/* ---------- lectura de filas ---------- */
+function mapHeader(rows) {
+  let hi = rows.findIndex(r => r && r.some(c => norm(c) === 'rut'));
+  if (hi < 0) throw new Error('No se encontró la columna RUT');
+  const h = rows[hi].map(norm), f = re => h.findIndex(x => re.test(x));
+  return { start: hi + 1, sem: f(/^semana/), fecha: f(/^fecha/), nom: f(/^nombre/), ape: f(/^apellido/), rut: f(/^rut/),
+    marca: f(/^marca/), sup: f(/supervisor/), lugar: f(/lugar/), prendas: f(/prenda/), obs: f(/observ/) };
+}
+function readRows(rows) {
+  const m = mapHeader(rows), out = [], seen = new Set();
+  for (let i = m.start; i < rows.length; i++) {
+    const r = rows[i]; if (!r) continue;
+    const g = k => m[k] >= 0 ? (r[m[k]] == null ? '' : String(r[m[k]]).trim()) : '';
+    const rut = normRut(g('rut')); if (!rut) continue;
+    const key = [rut, g('fecha'), norm(g('marca')), norm(g('prendas'))].join('|');
+    if (seen.has(key)) continue; seen.add(key);
+    out.push({ row: i + 1, rut, fecha: parseDate(g('fecha')), sem: parseInt(g('sem')) || null,
+      nombre: title(g('nom')), apellido: title(g('ape')), marca: canonMarca(g('marca')), marcaOrig: g('marca'),
+      sup: canonSup(g('sup')), lugar: title(g('lugar')), prendas: g('prendas'), obs: g('obs'), items: parseItems(g('prendas')) });
+  }
+  return out;
+}
+
+/* ---------- cruce ---------- */
+let DATA = null;
+function buildModel(ingRows, devRows, src) {
+  const ing = readRows(ingRows), dev = readRows(devRows);
+  const units = []; // una por prenda entregada
+  for (const e of ing) for (const it of e.items) for (let k = 0; k < it.qty; k++)
+    units.push({ e, cat: it.cat === '*' ? 'Kit completo' : it.cat, ret: null });
+  const byRut = new Map();
+  for (const u of units) { if (!byRut.has(u.e.rut)) byRut.set(u.e.rut, []); byRut.get(u.e.rut).push(u); }
+  for (const l of byRut.values()) l.sort((a, b) => (a.e.fecha || 0) - (b.e.fecha || 0));
+  const devSorted = dev.slice().sort((a, b) => (a.fecha || 0) - (b.fecha || 0));
+  const sinIngreso = [];
+  const okDate = (u, d) => u.e.fecha == null || d.fecha == null || u.e.fecha <= d.fecha + DAY;
+  for (const d of devSorted) {
+    const list = byRut.get(d.rut) || [];
+    const noMatch = [];
+    for (const it of d.items) {
+      if (it.cat === '*') {
+        const open = list.filter(u => !u.ret && okDate(u, d));
+        const same = open.filter(u => u.e.marca === d.marca);
+        (same.length ? same : open).forEach(u => u.ret = d);
+        if (!open.length) noMatch.push('Todo');
+        continue;
+      }
+      for (let k = 0; k < it.qty; k++) {
+        const cand = list.filter(u => !u.ret && u.cat === it.cat && okDate(u, d));
+        const u = cand.find(x => x.e.marca === d.marca) || cand[0];
+        if (u) u.ret = d; else noMatch.push(it.cat);
+      }
+    }
+    if (noMatch.length) sinIngreso.push({ d, cats: noMatch });
+  }
+  const all = ing.concat(dev).map(r => r.fecha).filter(Boolean);
+  DATA = { units, ing, dev, sinIngreso, src, maxDate: all.length ? Math.max(...all) : null };
+  initFilters(); render();
+}
+
+/* ---------- filtros ---------- */
+const F = { sup: '', marca: '', sem: '', est: '', q: '' };
+let VIEW = 'col', SORT = { k: 'pen', dir: -1 };
+function opts(sel, vals, all) { sel.innerHTML = `<option value="">${all}</option>` + vals.map(v => `<option>${esc(v)}</option>`).join(''); }
+function initFilters() {
+  const u = DATA.units;
+  opts($('#fSup'), [...new Set(u.map(x => x.e.sup))].sort((a, b) => a.localeCompare(b, 'es')), 'Todos');
+  opts($('#fMarca'), [...new Set(u.map(x => x.e.marca))].sort((a, b) => a.localeCompare(b, 'es')), 'Todas');
+  opts($('#fSem'), [...new Set(u.map(x => x.e.sem).filter(Boolean))].sort((a, b) => b - a).map(String), 'Todas');
+  for (const k of ['sup', 'marca', 'sem', 'est']) $('#f' + ({ sup: 'Sup', marca: 'Marca', sem: 'Sem', est: 'Est' })[k]).value = F[k];
+  $('#fQ').value = F.q;
+  const d = DATA.maxDate ? fdate(DATA.maxDate) : '—';
+  $('#meta').textContent = `${DATA.src} · registros hasta el ${d} · ${fmt(DATA.ing.length)} entregas y ${fmt(DATA.dev.length)} devoluciones registradas`;
+}
+function filteredUnits(ignoreSup) {
+  const q = norm(F.q);
+  return DATA.units.filter(u => (ignoreSup || !F.sup || u.e.sup === F.sup) && (!F.marca || u.e.marca === F.marca) &&
+    (!F.sem || String(u.e.sem) === F.sem) &&
+    (!q || norm(u.e.nombre + ' ' + u.e.apellido).includes(q) || u.e.rut.includes(q.replace(/[^0-9k]/g, '').toUpperCase() || '#') || norm(u.e.lugar).includes(q)));
+}
+function collaborators(units) {
+  const m = new Map();
+  for (const u of units) {
+    let c = m.get(u.e.rut);
+    if (!c) { c = { rut: u.e.rut, nombre: u.e.nombre, apellido: u.e.apellido, sups: new Set(), supsPen: new Set(), marcas: new Set(), lugares: new Set(), ent: 0, dev: 0, pen: 0, penCats: {}, last: 0, oldestPen: null, units: [] }; m.set(u.e.rut, c); }
+    c.sups.add(u.e.sup); c.marcas.add(u.e.marca); if (u.e.lugar) c.lugares.add(u.e.lugar);
+    c.ent++; c.units.push(u); if (u.e.fecha > c.last) c.last = u.e.fecha;
+    if (u.ret) c.dev++; else { c.pen++; c.supsPen.add(u.e.sup); c.penCats[u.cat] = (c.penCats[u.cat] || 0) + 1; if (c.oldestPen == null || u.e.fecha < c.oldestPen) c.oldestPen = u.e.fecha; }
+  }
+  for (const c of m.values()) {
+    c.est = c.pen === 0 ? 'Completo' : c.dev === 0 ? 'Sin devolución' : 'Parcial';
+    c.dias = c.oldestPen != null && DATA.maxDate ? Math.max(0, Math.floor((DATA.maxDate - c.oldestPen) / DAY)) : null;
+    c.supTxt = [...(c.pen ? c.supsPen : c.sups)].join(", ");
+    c.penTxt = Object.entries(c.penCats).sort((a, b) => b[1] - a[1]).map(([k, v]) => v > 1 ? `${k} ×${v}` : k).join(', ');
+  }
+  return [...m.values()];
+}
+const estOk = c => !F.est || (F.est === 'pend' ? c.pen > 0 : c.est === F.est);
+
+/* ---------- render ---------- */
+const tip = $('#tip');
+function showTip(ev, html) { tip.innerHTML = html; tip.style.display = 'block'; const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8), y = Math.min(ev.clientY + 14, innerHeight - tip.offsetHeight - 8); tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+function bindTips(root) { root.querySelectorAll('[data-tip]').forEach(el => { el.onmousemove = e => showTip(e, el.dataset.tip); el.onmouseleave = hideTip; }); }
+
+function render() {
+  const units = filteredUnits(false);
+  const cols = collaborators(units).filter(estOk);
+  const ruts = new Set(cols.map(c => c.rut));
+  const U = units.filter(u => ruts.has(u.e.rut));
+  const ent = U.length, dev = U.filter(u => u.ret).length, pen = ent - dev;
+  const cPen = cols.filter(c => c.pen > 0).length, cSin = cols.filter(c => c.est === 'Sin devolución').length;
+  $('#kpis').innerHTML = [
+    ['Prendas entregadas', fmt(ent), `${fmt(cols.length)} colaboradores`],
+    ['Prendas devueltas', fmt(dev), `${pct(dev, ent)}% de lo entregado`],
+    ['Prendas pendientes', fmt(pen), `${pct(pen, ent)}% de lo entregado`],
+    ['Colaboradores con pendientes', fmt(cPen), `${fmt(cSin)} sin ninguna devolución`],
+  ].map(([l, v, n]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join('');
+
+  // por supervisor (sin aplicar el filtro de supervisor, para comparar)
+  const uAll = filteredUnits(true);
+  const colsAll = collaborators(uAll).filter(estOk); const rAll = new Set(colsAll.map(c => c.rut));
+  const bySup = {};
+  for (const u of uAll) { if (!rAll.has(u.e.rut)) continue; const s = bySup[u.e.sup] || (bySup[u.e.sup] = { ent: 0, dev: 0, cols: new Set(), colsPen: new Set() }); s.ent++; s.cols.add(u.e.rut); if (u.ret) s.dev++; else s.colsPen.add(u.e.rut); }
+  const sups = Object.entries(bySup).sort((a, b) => (b[1].ent - b[1].dev) - (a[1].ent - a[1].dev) || b[1].ent - a[1].ent);
+  const maxE = Math.max(1, ...sups.map(([, s]) => s.ent));
+  $('#chSup').innerHTML = sups.map(([n, s]) => {
+    const p = s.ent - s.dev;
+    const t = `<b>${esc(n)}</b><br>Entregadas: ${fmt(s.ent)}<br>Devueltas: ${fmt(s.dev)} (${pct(s.dev, s.ent)}%)<br>Pendientes: ${fmt(p)}<br>Colaboradores con pendientes: ${fmt(s.colsPen.size)}`;
+    return `<div class="brow clickable ${F.sup === n ? 'active' : ''}" data-sup="${esc(n)}" data-tip="${esc(t)}"><div class="nm">${esc(n)}</div>
+      <div class="track" style="width:${Math.max(2, s.ent / maxE * 100)}%">${s.dev ? `<div class="seg" style="flex:${s.dev};background:var(--s-dev)"></div>` : ''}${p ? `<div class="seg" style="flex:${p};background:var(--s-pen)"></div>` : ''}</div>
+      <div class="val">${pct(s.dev, s.ent)}% · ${fmt(p)} pend.</div></div>`;
+  }).join('') || '<div class="muted">Sin datos para los filtros elegidos.</div>';
+  $('#chSup').querySelectorAll('[data-sup]').forEach(el => el.onclick = () => { F.sup = F.sup === el.dataset.sup ? '' : el.dataset.sup; $('#fSup').value = F.sup; render(); });
+  bindTips($('#chSup'));
+
+  // por tipo de prenda
+  const byCat = {}; for (const u of U) if (!u.ret) byCat[u.cat] = (byCat[u.cat] || 0) + 1;
+  let cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  if (cats.length > 12) { const rest = cats.slice(11).reduce((a, [, v]) => a + v, 0); cats = cats.slice(0, 11).concat([['Otras', rest]]); }
+  const maxC = Math.max(1, ...cats.map(c => c[1]));
+  $('#chCat').innerHTML = cats.map(([n, v]) => `<div class="brow" data-tip="<b>${esc(n)}</b><br>${fmt(v)} pendientes (${pct(v, pen)}% del total pendiente)"><div class="nm">${esc(n)}</div><div class="track"><div class="seg" style="width:${v / maxC * 100}%;background:var(--s-pen)"></div></div><div class="val">${fmt(v)}</div></div>`).join('') || '<div class="muted">No hay prendas pendientes.</div>';
+  bindTips($('#chCat'));
+
+  // por semana
+  const bySem = {}; for (const u of U) if (!u.ret && u.e.sem) bySem[u.e.sem] = (bySem[u.e.sem] || 0) + 1;
+  const semAll = [...new Set(U.map(u => u.e.sem).filter(Boolean))].sort((a, b) => a - b);
+  const maxS = Math.max(1, ...Object.values(bySem));
+  $('#chSem').innerHTML = semAll.map(s => { const v = bySem[s] || 0; return `<div class="col" style="height:${v ? Math.max(2, v / maxS * 100) : 0}%" data-tip="<b>Semana ${s}</b><br>${fmt(v)} prendas pendientes"></div>`; }).join('');
+  $('#chSemX').innerHTML = semAll.map(s => `<div>S${s}</div>`).join('');
+  bindTips($('#chSem'));
+
+  // tabla supervisores
+  $('#tSup').innerHTML = `<thead><tr><th>Supervisor/a</th><th class="num">Colaboradores</th><th class="num">Entregadas</th><th class="num">Devueltas</th><th class="num">Pendientes</th><th class="num">% devolución</th><th class="num">Colab. con pendientes</th></tr></thead><tbody>` +
+    sups.map(([n, s]) => `<tr><td>${esc(n)}</td><td class="num">${fmt(s.cols.size)}</td><td class="num">${fmt(s.ent)}</td><td class="num">${fmt(s.dev)}</td><td class="num">${fmt(s.ent - s.dev)}</td><td class="num">${pct(s.dev, s.ent)}%</td><td class="num">${fmt(s.colsPen.size)}</td></tr>`).join('') + '</tbody>';
+
+  renderTable(cols);
+}
+
+const COLS = [
+  ['nom', 'Colaborador/a', c => c.nombre + ' ' + c.apellido], ['rut', 'RUT', c => +c.rut.slice(0, -1)], ['sup', 'Supervisor/a', c => c.supTxt],
+  ['marca', 'Marca', c => [...c.marcas].join(', ')], ['last', 'Última entrega', c => c.last], ['ent', 'Entreg.', c => c.ent], ['dev', 'Devuel.', c => c.dev],
+  ['pen', 'Pend.', c => c.pen], ['dias', 'Días', c => c.dias ?? -1], ['txt', 'Prendas pendientes', c => c.penTxt], ['est', 'Estado', c => c.est],
+];
+function renderTable(cols) {
+  const t = $('#tCol');
+  if (VIEW === 'sin') {
+    const q = norm(F.q);
+    const rows = DATA.sinIngreso.filter(x => (!F.sup || x.d.sup === F.sup) && (!F.marca || x.d.marca === F.marca) && (!q || norm(x.d.nombre + ' ' + x.d.apellido).includes(q) || x.d.rut.includes(q.toUpperCase())))
+      .sort((a, b) => (b.d.fecha || 0) - (a.d.fecha || 0));
+    $('#tColHint').textContent = `${fmt(rows.length)} devoluciones no calzan con una entrega registrada (entregas previas al registro, RUT mal digitado o prenda distinta).`;
+    t.innerHTML = `<thead><tr><th>Fecha</th><th>Colaborador/a</th><th>RUT</th><th>Supervisor/a</th><th>Marca</th><th>Lugar</th><th>Devolvió</th><th>Sin entrega asociada</th></tr></thead><tbody>` +
+      rows.map(({ d, cats }) => `<tr><td>${fdate(d.fecha)}</td><td>${esc(d.nombre + ' ' + d.apellido)}</td><td>${fmtRut(d.rut)}</td><td>${esc(d.sup)}</td><td>${esc(d.marca)}</td><td>${esc(d.lugar)}</td><td class="small">${esc(d.prendas)}</td><td class="small">${esc([...new Set(cats)].join(', '))}</td></tr>`).join('') + '</tbody>';
+    return;
+  }
+  const col = COLS.find(c => c[0] === SORT.k);
+  cols.sort((a, b) => { const x = col[2](a), y = col[2](b); return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'es')) * SORT.dir; });
+  $('#tColHint').textContent = `${fmt(cols.length)} colaboradores · Días = días desde la entrega más antigua aún pendiente.`;
+  const badge = e => `<span class="badge ${e === 'Completo' ? 'b-ok' : e === 'Parcial' ? 'b-par' : 'b-pen'}">${e}</span>`;
+  const shown = cols.slice(0, 800);
+  t.innerHTML = `<thead><tr>${COLS.map(([k, l]) => `<th data-k="${k}" class="${['ent', 'dev', 'pen', 'dias'].includes(k) ? 'num' : ''}">${l}${SORT.k === k ? (SORT.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>` +
+    shown.map(c => `<tr><td>${esc(c.nombre + ' ' + c.apellido)}</td><td style="white-space:nowrap">${fmtRut(c.rut)}</td><td>${esc(c.supTxt)}</td><td class="small">${esc([...c.marcas].join(', '))}</td><td>${fdate(c.last)}</td>
+      <td class="num">${c.ent}</td><td class="num">${c.dev}</td><td class="num">${c.pen}</td><td class="num">${c.dias ?? ''}</td><td class="small pend">${esc(c.penTxt) || '<span class="muted">—</span>'}</td><td>${badge(c.est)}</td></tr>`).join('') +
+    (cols.length > shown.length ? `<tr><td colspan="11" class="muted">Mostrando ${shown.length} de ${cols.length}. Usa los filtros o exporta a Excel para ver todo.</td></tr>` : '') + '</tbody>';
+  t.querySelectorAll('th[data-k]').forEach(th => th.onclick = () => { const k = th.dataset.k; SORT = { k, dir: SORT.k === k ? -SORT.dir : (['nom', 'sup', 'marca', 'txt', 'est'].includes(k) ? 1 : -1) }; renderTable(cols); });
+}
+
+/* ---------- eventos ---------- */
+[['fSup', 'sup'], ['fMarca', 'marca'], ['fSem', 'sem'], ['fEst', 'est']].forEach(([id, k]) => $('#' + id).onchange = e => { F[k] = e.target.value; render(); });
+let qt; $('#fQ').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { F.q = e.target.value; render(); }, 150); };
+$('#clr').onclick = () => { Object.keys(F).forEach(k => F[k] = ''); initFilters(); render(); };
+$('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; VIEW = b.dataset.v; $('#tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); render(); };
+
+/* ---------- ZIP / XLSX (sin librerías) ---------- */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  for (const [name, str] of files) {
+    const nb = enc.encode(name), data = enc.encode(str), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true);
+    parts.push(new Uint8Array(h.buffer), nb, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, nb.length, true); c.setUint32(42, off, true);
+    cen.push(new Uint8Array(c.buffer), nb); off += 30 + nb.length + data.length;
+  }
+  const csize = cen.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...cen, new Uint8Array(e.buffer)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+const xesc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+function colL(i) { let s = ''; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function sheetXml(rows, widths) {
+  const cols = widths ? '<cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols>' : '';
+  const body = rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => {
+    const ref = colL(ci) + (ri + 1), st = ri === 0 ? ' s="1"' : '';
+    return typeof v === 'number' ? `<c r="${ref}"${st}><v>${v}</v></c>` : `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
+  }).join('') + '</row>').join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${body}</sheetData>${rows.length > 1 ? `<autoFilter ref="A1:${colL(rows[0].length - 1)}${rows.length}"/>` : ''}</worksheet>`;
+}
+function xlsx(sheets) {
+  const f = [
+    ['[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
+    ['_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s, i) => `<sheet name="${xesc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets>${sheets.map((s, i) => s.rows.length > 1 ? `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${xesc(s.name)}'!$A$1:$${colL(s.rows[0].length - 1)}$${s.rows.length}</definedName></definedNames>` : '').join('').replace(/<\/definedNames><definedNames>/g, '')}</workbook>`],
+    ['xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2A78D6"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`],
+  ];
+  sheets.forEach((s, i) => f.push([`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s.rows, s.widths)]));
+  return zip(f);
+}
+$('#exp').onclick = () => {
+  const units = filteredUnits(false);
+  const cols = collaborators(units).filter(estOk).filter(c => c.pen > 0).sort((a, b) => a.supTxt.localeCompare(b.supTxt, 'es') || b.pen - a.pen);
+  const r1 = [['Supervisor/a', 'RUT', 'Nombre', 'Apellido', 'Marca(s)', 'Lugar(es) de trabajo', 'Última entrega', 'Días pendiente', 'Prendas entregadas', 'Prendas devueltas', 'Prendas pendientes', 'Detalle pendiente', 'Estado']];
+  for (const c of cols) r1.push([c.supTxt, fmtRut(c.rut), c.nombre, c.apellido, [...c.marcas].join(', '), [...c.lugares].join(', '), fdate(c.last), c.dias ?? '', c.ent, c.dev, c.pen, c.penTxt, c.est]);
+  const r2 = [['Supervisor/a', 'RUT', 'Nombre', 'Apellido', 'Marca', 'Lugar de trabajo', 'Semana', 'Fecha entrega', 'Prenda pendiente', 'Registro original', 'Observaciones']];
+  const ruts = new Set(cols.map(c => c.rut));
+  units.filter(u => !u.ret && ruts.has(u.e.rut)).sort((a, b) => a.e.sup.localeCompare(b.e.sup, 'es') || a.e.apellido.localeCompare(b.e.apellido, 'es') || (a.e.fecha - b.e.fecha))
+    .forEach(u => r2.push([u.e.sup, fmtRut(u.e.rut), u.e.nombre, u.e.apellido, u.e.marca, u.e.lugar, u.e.sem || '', fdate(u.e.fecha), u.cat, u.e.prendas, u.e.obs]));
+  const bs = {}; for (const c of cols) for (const s of c.supsPen) { const x = bs[s] || (bs[s] = { c: 0, p: 0 }); x.c++; } for (const u of units) if (!u.ret && ruts.has(u.e.rut)) bs[u.e.sup].p++;
+  const r3 = [['Supervisor/a', 'Colaboradores con pendientes', 'Prendas pendientes']].concat(Object.entries(bs).sort((a, b) => b[1].p - a[1].p).map(([s, x]) => [s, x.c, x.p]));
+  const blob = xlsx([{ name: 'Pendientes', rows: r1, widths: [20, 13, 22, 22, 18, 26, 13, 10, 10, 10, 10, 40, 14] }, { name: 'Detalle prendas', rows: r2, widths: [20, 13, 22, 22, 16, 26, 8, 13, 20, 36, 30] }, { name: 'Resumen supervisor', rows: r3, widths: [22, 26, 18] }]);
+  const tag = [F.sup, F.marca, F.sem && 'S' + F.sem].filter(Boolean).join('_').replace(/[^\p{L}\p{N}_]+/gu, '-');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Pendientes_devolucion${tag ? '_' + tag : ''}_${fdate(Date.now() - new Date().getTimezoneOffset() * 6e4)}.xlsx`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+/* ---------- lectura de .xlsx cargado ---------- */
+async function unzip(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf); let e = u8.length - 22;
+  while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('El archivo no es un .xlsx válido');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const out = {}, dec = new TextDecoder();
+  for (let i = 0; i < n; i++) {
+    const method = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+    const ds = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), raw = u8.subarray(ds, ds + csz);
+    out[name] = async () => method === 0 ? dec.decode(raw) : await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  }
+  return out;
+}
+async function readXlsx(buf) {
+  const z = await unzip(buf), P = new DOMParser(), X = s => P.parseFromString(s, 'application/xml');
+  const ss = z['xl/sharedStrings.xml'] ? [...X(await z['xl/sharedStrings.xml']()).getElementsByTagName('si')].map(si => [...si.getElementsByTagName('t')].map(t => t.textContent).join('')) : [];
+  const wb = X(await z['xl/workbook.xml']()), rels = X(await z['xl/_rels/workbook.xml.rels']());
+  const relMap = {}; for (const r of rels.getElementsByTagName('Relationship')) relMap[r.getAttribute('Id')] = r.getAttribute('Target');
+  const sheets = {};
+  for (const s of wb.getElementsByTagName('sheet')) { const id = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'); let t = relMap[id]; t = t.startsWith('/') ? t.slice(1) : 'xl/' + t; sheets[norm(s.getAttribute('name'))] = t; }
+  const get = async (re) => {
+    const k = Object.keys(sheets).find(n => re.test(n)); if (!k) throw new Error('No se encontró la pestaña ' + re.source);
+    const doc = X(await z[sheets[k]]()), rows = [];
+    for (const r of doc.getElementsByTagName('row')) {
+      const ri = +r.getAttribute('r') - 1, arr = [];
+      for (const c of r.getElementsByTagName('c')) {
+        const ref = c.getAttribute('r').replace(/\d+/g, ''); let ci = 0; for (const ch of ref) ci = ci * 26 + ch.charCodeAt(0) - 64; ci--;
+        const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+        arr[ci] = t === 's' ? ss[+v.textContent] : t === 'inlineStr' ? [...c.getElementsByTagName('t')].map(x => x.textContent).join('') : v ? v.textContent : '';
+      }
+      rows[ri] = arr;
+    }
+    return rows;
+  };
+  return { ing: await get(/^registro de ingresos?$/), dev: await get(/^registro de devoluciones$/) };
+}
+async function loadFile(file) {
+  try { const d = await readXlsx(await file.arrayBuffer()); buildModel(d.ing, d.dev, file.name); }
+  catch (err) { alert('No se pudo leer el archivo: ' + err.message); }
+}
+$('#file').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value = ''; };
+const app = $('#app');
+app.addEventListener('dragover', e => { e.preventDefault(); app.classList.add('drop'); });
+app.addEventListener('dragleave', e => { if (e.target === app) app.classList.remove('drop'); });
+app.addEventListener('drop', e => { e.preventDefault(); app.classList.remove('drop'); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+const WEB = true;
+if (WEB) {
+  document.querySelector('label.btn').remove();
+  document.querySelector('footer p:last-child').textContent = 'Los datos se actualizan automáticamente desde el Google Sheet de registro.';
+  fetch('datos.json?v=' + Date.now(), { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => buildModel(d.ing, d.dev, 'Actualizado el ' + d.generado))
+    .catch(() => { $('#meta').textContent = 'No se pudieron cargar los datos. Intenta recargar la página.'; });
+} else if (EMBED) buildModel(EMBED.ing, EMBED.dev, EMBED.src);
+else $('#meta').textContent = 'Sin datos: carga el Excel descargado desde Google Sheets.';
+</script>
+</body>
+</html>
